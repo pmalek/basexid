@@ -9,12 +9,20 @@ import (
 
 var (
 	dictionary = []byte{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}
+	zero       = big.NewInt(0)
 )
+
+func pow(base, exp int) int {
+	var result int = 1
+	for i := exp; i > 0; i-- {
+		result = result * base
+	}
+	return result
+}
 
 // Encode converts the big integer to alpha id (an alphanumeric id with mixed cases)
 func Encode(val string) string {
 	var result []byte
-	zero := big.NewInt(0)
 
 	base := big.NewInt(int64(len(dictionary)))
 
@@ -39,6 +47,35 @@ func Encode(val string) string {
 		index, _ := strconv.Atoi(strVal)
 		result = append(result, dictionary[index])
 		remaining = remaining.Sub(remaining, b) //119 - 7 = 112 | 112 - 112 = 0
+		exponent += 1
+	}
+
+	//need to reverse it, since the start of the list contains the least significant values
+	return string(reverse(result))
+}
+
+// Encode converts the big integer to alpha id (an alphanumeric id with mixed cases)
+func Encodei(val int) string {
+	var result []byte
+
+	base := len(dictionary)
+
+	var a, b, c, d int
+
+	remaining := val
+
+	var exponent int = 1
+	for remaining != 0 {
+		a = pow(base, exponent)
+		b = remaining % a //119 % 16 = 7 | 112 % 256 = 112
+		c = pow(base, exponent-1)
+		d = b / c
+
+		//if d > dictionary.length, we have a problem. but BigInteger doesnt have
+		//a greater than method :-(  hope for the best. theoretically, d is always
+		//an index of the dictionary!
+		result = append(result, dictionary[d])
+		remaining = remaining - b //119 - 7 = 112 | 112 - 112 = 0
 		exponent += 1
 	}
 
