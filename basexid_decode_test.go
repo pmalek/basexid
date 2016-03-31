@@ -4,22 +4,22 @@ import "testing"
 
 // Decode
 
-func Test_Decode_Zero(t *testing.T) {
-	test("0", Decode(""), t)
-}
+func Test_Decode(t *testing.T) {
+	tests := []struct {
+		value    string
+		expected string
+	}{
+		{"0", ""},
+		{"1", "1"},
+		{"120", "1w"},
+		{"198237", "pZN"},
+		{"123987123176", "2BKvKfI"},
+	}
 
-func Test_Decode_One(t *testing.T) {
-	test("1", Decode("1"), t)
-}
-
-func Test_Decode1(t *testing.T) {
-	test("120", Decode("1w"), t)
-}
-
-func Test_Decode2(t *testing.T) {
-	test("198237", Decode("pZN"), t)
-}
-
-func Test_Decode3(t *testing.T) {
-	test("123987123176", Decode("2BKvKfI"), t)
+	for _, test := range tests {
+		if actual := Encode(test.value); actual != test.expected {
+			t.Errorf("Encode(%q) should give %q but received %q",
+				test.value, test.expected, actual)
+		}
+	}
 }

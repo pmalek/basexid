@@ -1,5 +1,3 @@
-// Package basex generates alpha id (alphanumeric id) for big integers.  This
-// is particularly useful for shortening URLs.
 package basex
 
 import (
@@ -10,6 +8,7 @@ import (
 var (
 	dictionary = []byte{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}
 	zero       = big.NewInt(0)
+	base       = len(dictionary)
 )
 
 func pow(base, exp int) int {
@@ -34,6 +33,10 @@ func Encode(val string) string {
 	remaining := big.NewInt(0)
 	remaining.SetString(val, 10)
 
+	if remaining.Cmp(zero) == -1 { // val < 0
+		return ""
+	}
+
 	for exponent := 1; remaining.Cmp(zero) != 0; {
 		a.Exp(base, big.NewInt(int64(exponent)), nil) //16^1 = 16
 		b.Mod(remaining, a)                           //119 % 16 = 7 | 112 % 256 = 112
@@ -54,33 +57,53 @@ func Encode(val string) string {
 	return string(reverse(result))
 }
 
-// Encode converts the big integer to alpha id (an alphanumeric id with mixed cases)
 func Encodei(val int) string {
+	if val < 0 {
+		return ""
+	}
+
 	var result []byte
 
-	base := len(dictionary)
+	var a, b, c, d, exponent int = 0, 0, 0, 0, 1
 
-	var a, b, c, d int
-
-	remaining := val
-
-	var exponent int = 1
-	for remaining != 0 {
+	for val != 0 {
 		a = pow(base, exponent)
-		b = remaining % a //119 % 16 = 7 | 112 % 256 = 112
+		b = val % a
 		c = pow(base, exponent-1)
 		d = b / c
 
-		//if d > dictionary.length, we have a problem. but BigInteger doesnt have
-		//a greater than method :-(  hope for the best. theoretically, d is always
-		//an index of the dictionary!
 		result = append(result, dictionary[d])
-		remaining = remaining - b //119 - 7 = 112 | 112 - 112 = 0
+		val -= b
 		exponent += 1
 	}
 
-	//need to reverse it, since the start of the list contains the least significant values
-	return string(reverse(result))
+	return string(result)
+}
+
+func Encode_fixed(val, width int) string {
+	if val > pow(base, width) {
+		return ""
+	}
+
+	result := make([]byte, width)
+	for i := range result {
+		result[i] = '0'
+	}
+
+	var a, b, c, d, exponent int = 0, 0, 0, 0, 1
+
+	for val != 0 {
+		a = pow(base, exponent)
+		b = val % a
+		c = pow(base, exponent-1)
+		d = b / c
+
+		result[exponent-1] = dictionary[d]
+		val -= b
+		exponent += 1
+	}
+
+	return string(result)
 }
 
 // Decode converts the alpha id to big integer
